@@ -35,6 +35,16 @@ class MemcachedApi
 		return $this->_memcache->get($this->_getCommand("Cast", 42, 3.14159265359, "Hello"));
 	}
 
+	public function multiGet()
+	{
+		return $this->_memcache->get(
+			[
+				$this->_getCommand("GetUserById", 42),
+				$this->_getCommand("GetAuthUser", "token")
+			]
+		);
+	}
+
 	public function returnError()
 	{
 		return $this->_memcache->get($this->_getCommand("ReturnError"));
@@ -55,11 +65,16 @@ $Api = new MemcachedApi;
 
 var_dump($Api->getStats());
 var_dump($Api->getUserById(42));
+
+var_dump($Api->multiGet());
+
 var_dump($Api->notFoundmethod());
 var_dump($Api->getAuthUser(uniqid()));
 var_dump($Api->getUserByTwoParams(uniqid(), 42));
 var_dump($Api->cast());
 var_dump($Api->returnError());
 var_dump($Api->notFoundmethod());
+
+
 
 

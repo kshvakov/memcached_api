@@ -139,55 +139,62 @@ func (api *Api) Handle(connect net.Conn) {
 
 func (api *Api) callGet(request []byte, connect net.Conn) {
 
+	var errorMessage string
+
 	commands := bytes.Split(request, []byte(" "))
 
 	for _, command := range commands[1:] {
 
 		part := strings.SplitN(string(command), ":", 2)
 
-		var errorMessage string
-
 		method := part[0]
 
 		if handler, found := api.getHandlers[method]; found {
 
-			errorMessage = "Invalid params"
+			data, _ := base64.StdEncoding.DecodeString(part[1])
 
-			if data, err := base64.StdEncoding.DecodeString(part[1]); err == nil {
+			var tmp []interface{}
 
-				var tmp []interface{}
+			if err := json.Unmarshal(data, &tmp); err == nil {
 
-				if err := json.Unmarshal(data, &tmp); err == nil {
+				reflectHandler := reflect.ValueOf(handler)
 
-					reflectHandler := reflect.ValueOf(handler)
+				params := make([]reflect.Value, len(tmp))
 
-					params := make([]reflect.Value, len(tmp))
+				for i, _ := range tmp {
 
-					for i, _ := range tmp {
-
-						params[i] = reflect.ValueOf(tmp[i]).Convert(reflectHandler.Type().In(i))
-					}
-
-					result := reflectHandler.Call(params)
-
-					if result[1].IsNil() {
-
-						if response, err := json.Marshal(result[0].Interface()); err == nil {
-
-							connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(response))))
-							connect.Write(response)
-							connect.Write([]byte("\r\nEND\r\n"))
-
-							return
-
-						} else {
-
-							errorMessage = err.Error()
-						}
-					}
-
-					errorMessage = fmt.Sprint(result[1].Interface())
+					params[i] = reflect.ValueOf(tmp[i]).Convert(reflectHandler.Type().In(i))
 				}
+
+				result := reflectHandler.Call(params)
+
+				var responseMessage []byte
+
+				if result[1].IsNil() {
+
+					if response, err := json.Marshal(result[0].Interface()); err == nil {
+
+						responseMessage = response
+
+					} else {
+
+						responseMessage, _ = json.Marshal(map[string]string{"error": err.Error()})
+					}
+
+				} else {
+
+					responseMessage, _ = json.Marshal(map[string]string{"error": fmt.Sprint(result[1].Interface())})
+				}
+
+				connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(responseMessage))))
+				connect.Write(responseMessage)
+				connect.Write([]byte("\r\n"))
+
+				continue
+
+			} else {
+
+				errorMessage = fmt.Sprintf("Invalid params (%s)", err.Error())
 			}
 
 		} else {
@@ -201,10 +208,10 @@ func (api *Api) callGet(request []byte, connect net.Conn) {
 
 		connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(response))))
 		connect.Write(response)
-		connect.Write([]byte("\r\nEND\r\n"))
-
-		//connect.Write([]byte("CLIENT_ERROR method not found\r\nEND\r\n"))
+		connect.Write([]byte("\r\n"))
 	}
+
+	connect.Write([]byte("END\r\n"))
 }
 
 func isValidGetHandler(handler getHandler) bool {

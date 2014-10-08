@@ -3,7 +3,8 @@ Memcached API (Golang implementation)
 
 
 * Memcached ASCII protocol
-* Get request with any params (json message)
+* Support multiget request
+* Get request with any params (key = method:base64(json(params)))
 * JSON response
 
 
@@ -11,7 +12,7 @@ Memcached API (Golang implementation)
 
 simple
 
-```golang
+```go
 
 type User struct {
 	UserId    int    `json:"user_id,omitempty"`
@@ -33,19 +34,9 @@ func (users *Users) GetUserByTwoParams(login string, userId int) (interface{}, e
 	return &User{UserId: userId, UserName: "Test User", UserLogin: login}, nil
 }
 
-func (users *Users) GetAuthUser(token string) (interface{}, error) {
-
-	return &User{UserName: "Test User", UserToken: token}, nil
-}
-
 func (users *Users) Cast(intParam int, floatParam float64, stringParam string) (interface{}, error) {
 
 	return map[string]interface{}{"Int": intParam, "Float": floatParam, "String": stringParam}, nil
-}
-
-func (users *Users) ReturnError() (interface{}, error) {
-
-	return nil, fmt.Errorf("Error message")
 }
 
 func main() {
@@ -55,10 +46,8 @@ func main() {
 	api := memcached_api.New()
 
 	api.Get("GetUserById", users.GetUserById)
-	api.Get("GetAuthUser", users.GetAuthUser)
 	api.Get("GetUserByTwoParams", users.GetUserByTwoParams)
 	api.Get("Cast", users.Cast)
-	api.Get("ReturnError", users.ReturnError)
 
 	api.Run()
 }
