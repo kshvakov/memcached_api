@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"encoding/base64"
 	"fmt"
 	"github.com/kshvakov/memcached_api"
 )

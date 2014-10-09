@@ -28,6 +28,16 @@ func (api *MemcachedApi) GetUserByTwoParams(login string, userId int) (*memcache
 	return api.memcache.Get(getCommand("GetUserByTwoParams", login, userId))
 }
 
+func (api *MemcachedApi) GetAuthUser(token string) (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("GetAuthUser", token))
+}
+
+func (api *MemcachedApi) Cast() (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("Cast", 42, 3.14159265359, "Hello"))
+}
+
 func (api *MemcachedApi) MultiGet() (map[string]*memcache.Item, error) {
 
 	return api.memcache.GetMulti([]string{
@@ -35,6 +45,16 @@ func (api *MemcachedApi) MultiGet() (map[string]*memcache.Item, error) {
 		getCommand("GetAuthUser", "token"),
 	},
 	)
+}
+
+func (api *MemcachedApi) ReturnError() (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("ReturnError"))
+}
+
+func (api *MemcachedApi) NotFoundmethod() (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("notFoundmethod"))
 }
 
 func getCommand(method string, params ...interface{}) string {
@@ -56,10 +76,26 @@ func main() {
 
 	fmt.Println(string(item.Value))
 
+	item, _ = api.GetAuthUser("token")
+
+	fmt.Println(string(item.Value))
+
+	item, _ = api.Cast()
+
+	fmt.Println(string(item.Value))
+
+	item, _ = api.NotFoundmethod()
+
+	fmt.Println(string(item.Value))
+
 	items, _ := api.MultiGet()
 
 	for k, item := range items {
 
 		fmt.Println(k, string(item.Value))
 	}
+
+	item, _ = api.ReturnError()
+
+	fmt.Println(string(item.Value))
 }

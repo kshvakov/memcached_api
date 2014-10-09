@@ -44,7 +44,7 @@ class MemcachedApi
 			]
 		);
 	}
-
+	
 	public function returnError()
 	{
 		return $this->_memcache->get($this->_getCommand("ReturnError"));

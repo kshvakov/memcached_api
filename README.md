@@ -10,7 +10,7 @@ Memcached API (Golang implementation)
 
 @todo: finalize it )
 
-simple
+simple api server
 
 ```go
 
@@ -51,5 +51,59 @@ func main() {
 
 	api.Run()
 }
+
+```
+
+Client Go
+
+```go
+func NewMemcachedApi() *MemcachedApi {
+
+	return &MemcachedApi{
+		memcache: memcache.New("127.0.0.1:3000"),
+	}
+}
+
+type MemcachedApi struct {
+	memcache *memcache.Client
+}
+
+func (api *MemcachedApi) GetUserById(userId int) (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("GetUserById", userId))
+}
+
+func main() {
+
+	api := NewMemcachedApi()
+
+	item, _ := api.GetUserById(42)
+
+	fmt.Println(string(item.Value))
+}
+```
+
+Client PHP
+
+```php
+class MemcachedApi
+{
+	protected $_memcache;
+
+	public function __construct()
+	{
+		$this->_memcache = new \Memcache();
+		$this->_memcache->connect('127.0.0.1', 3000);
+	}
+
+	public function getUserById($userId)
+	{
+		return $this->_memcache->get($this->_getCommand("GetUserById", (int) $userId));
+	}
+}
+
+$Api = new MemcachedApi;
+
+var_dump($Api->getUserById(42));
 
 ```
