@@ -73,6 +73,13 @@ func (api *MemcachedApi) GetUserById(userId int) (*memcache.Item, error) {
 	return api.memcache.Get(getCommand("GetUserById", userId))
 }
 
+func getCommand(method string, params ...interface{}) string {
+
+	jsonParams, _ := json.Marshal(params)
+
+	return fmt.Sprintf("%s:%s", method, base64.StdEncoding.EncodeToString(jsonParams))
+}
+
 func main() {
 
 	api := NewMemcachedApi()
@@ -99,6 +106,11 @@ class MemcachedApi
 	public function getUserById($userId)
 	{
 		return $this->_memcache->get($this->_getCommand("GetUserById", (int) $userId));
+	}
+	
+	protected function _getCommand($method, ...$params)
+	{
+		return sprintf("%s:%s", $method, base64_encode(json_encode($params)));
 	}
 }
 
