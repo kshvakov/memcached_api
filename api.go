@@ -121,7 +121,6 @@ func (api *Api) Handle(connect net.Conn) {
 			}
 
 			connect.Write([]byte("STORED\r\n"))
-			connect.Write([]byte("END\r\n"))
 
 		case bytes.HasPrefix(request, []byte("stats")):
 
@@ -139,7 +138,7 @@ func (api *Api) Handle(connect net.Conn) {
 
 func (api *Api) callGet(request []byte, connect net.Conn) {
 
-	var errorMessage string
+	var response interface{}
 
 	commands := bytes.Split(request, []byte(" "))
 
@@ -168,47 +167,39 @@ func (api *Api) callGet(request []byte, connect net.Conn) {
 
 				result := reflectHandler.Call(params)
 
-				var responseMessage []byte
-
 				if result[1].IsNil() {
 
-					if response, err := json.Marshal(result[0].Interface()); err == nil {
-
-						responseMessage = response
-
-					} else {
-
-						responseMessage, _ = json.Marshal(map[string]string{"error": err.Error()})
-					}
+					response = result[0].Interface()
 
 				} else {
 
-					responseMessage, _ = json.Marshal(map[string]string{"error": fmt.Sprint(result[1].Interface())})
+					response = map[string]string{"error": fmt.Sprint(result[1].Interface())}
 				}
-
-				connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(responseMessage))))
-				connect.Write(responseMessage)
-				connect.Write([]byte("\r\n"))
-
-				continue
 
 			} else {
 
-				errorMessage = fmt.Sprintf("Invalid params (%s)", err.Error())
+				response = map[string]string{"error": fmt.Sprintf("Invalid params (%s)", err.Error())}
 			}
 
 		} else {
 
-			errorMessage = "Method not found"
+			response = map[string]string{"error": "Method not found"}
 		}
 
-		log.Print(errorMessage)
+		if responseMessage, err := json.Marshal(response); err == nil {
 
-		response, _ := json.Marshal(map[string]string{"error": errorMessage})
+			connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(responseMessage))))
+			connect.Write(responseMessage)
+			connect.Write([]byte("\r\n"))
 
-		connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(response))))
-		connect.Write(response)
-		connect.Write([]byte("\r\n"))
+		} else {
+
+			errorMessage, _ := json.Marshal(map[string]string{"error": err.Error()})
+
+			connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(errorMessage))))
+			connect.Write(errorMessage)
+			connect.Write([]byte("\r\n"))
+		}
 	}
 
 	connect.Write([]byte("END\r\n"))
