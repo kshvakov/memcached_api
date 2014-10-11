@@ -3,21 +3,24 @@ package memcached_api
 import (
 	"bufio"
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"reflect"
-	"strings"
 )
+
+type setHandler struct {
+	method reflect.Value
+	params reflect.Value
+}
 
 type Api struct {
 	statHandler statHandler
-	getHandlers map[string]getHandler
+	getHandlers map[string]interface{}
+	setHandlers map[string]*setHandler
 }
 
-func (api *Api) Get(key string, handler getHandler) error {
+func (api *Api) Get(key string, handler interface{}) error {
 
 	if isValidGetHandler(handler) {
 
@@ -31,8 +34,23 @@ func (api *Api) Get(key string, handler getHandler) error {
 	return fmt.Errorf("Invalid Get handler")
 }
 
-func (api *Api) Set(key string, handler setHandler) {
+func (api *Api) Set(key string, handler interface{}) error {
 
+	method := reflect.ValueOf(handler)
+
+	if method.Type().NumIn() == 1 && method.Type().In(0).Kind() == reflect.Ptr {
+
+		api.setHandlers[key] = &setHandler{
+			method: method,
+			params: reflect.New(method.Type().In(0).Elem()),
+		}
+
+		return nil
+	}
+
+	log.Print("Invalid Set handler")
+
+	return fmt.Errorf("Invalid Set handler")
 }
 
 func (api *Api) Delete(key string, handler deleteHandler) {
@@ -54,13 +72,15 @@ func (api *Api) Stats(handler statHandler) {
 
 func (api *Api) Run() {
 
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+
 	if listener, err := net.Listen("tcp", "127.0.0.1:3000"); err == nil {
 
 		for {
 
 			if connect, err := listener.Accept(); err == nil {
 
-				go api.Handle(connect)
+				go api.handle(connect)
 
 			} else {
 
@@ -74,7 +94,7 @@ func (api *Api) Run() {
 	}
 }
 
-func (api *Api) Handle(connect net.Conn) {
+func (api *Api) handle(connect net.Conn) {
 
 	defer func() {
 
@@ -109,18 +129,16 @@ func (api *Api) Handle(connect net.Conn) {
 
 		case bytes.HasPrefix(request, []byte("set")):
 
-			fmt.Println("set: ", string(request))
-
 			if data, err := reader.ReadBytes('\n'); err == nil {
 
-				log.Printf("data: %s", string(data))
+				api.callSet(request, data, connect)
 
 			} else {
 
 				log.Printf("data err: %s", err.Error())
-			}
 
-			connect.Write([]byte("STORED\r\n"))
+				connect.Write([]byte("NOT_STORED\r\n"))
+			}
 
 		case bytes.HasPrefix(request, []byte("stats")):
 
@@ -136,76 +154,7 @@ func (api *Api) Handle(connect net.Conn) {
 	}
 }
 
-func (api *Api) callGet(request []byte, connect net.Conn) {
-
-	var response interface{}
-
-	commands := bytes.Split(request, []byte(" "))
-
-	for _, command := range commands[1:] {
-
-		part := strings.SplitN(string(command), ":", 2)
-
-		method := part[0]
-
-		if handler, found := api.getHandlers[method]; found {
-
-			data, _ := base64.StdEncoding.DecodeString(part[1])
-
-			var tmp []interface{}
-
-			if err := json.Unmarshal(data, &tmp); err == nil {
-
-				reflectHandler := reflect.ValueOf(handler)
-
-				params := make([]reflect.Value, len(tmp))
-
-				for i, _ := range tmp {
-
-					params[i] = reflect.ValueOf(tmp[i]).Convert(reflectHandler.Type().In(i))
-				}
-
-				result := reflectHandler.Call(params)
-
-				if result[1].IsNil() {
-
-					response = result[0].Interface()
-
-				} else {
-
-					response = map[string]string{"error": fmt.Sprint(result[1].Interface())}
-				}
-
-			} else {
-
-				response = map[string]string{"error": fmt.Sprintf("Invalid params (%s)", err.Error())}
-			}
-
-		} else {
-
-			response = map[string]string{"error": "Method not found"}
-		}
-
-		if responseMessage, err := json.Marshal(response); err == nil {
-
-			connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(responseMessage))))
-			connect.Write(responseMessage)
-			connect.Write([]byte("\r\n"))
-
-		} else {
-
-			errorMessage, _ := json.Marshal(map[string]string{"error": err.Error()})
-
-			connect.Write([]byte(fmt.Sprintf("VALUE %s 0 %d\r\n", method, len(errorMessage))))
-			connect.Write(errorMessage)
-			connect.Write([]byte("\r\n"))
-		}
-	}
-
-	connect.Write([]byte("END\r\n"))
-}
-
-func isValidGetHandler(handler getHandler) bool {
+func isValidGetHandler(handler interface{}) bool {
 
 	methodType := reflect.ValueOf(handler).Type()
 

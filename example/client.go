@@ -7,6 +7,13 @@ import (
 	"github.com/bradfitz/gomemcache/memcache"
 )
 
+type User struct {
+	UserId    int    `json:"user_id,omitempty"`
+	UserName  string `json:"user_name"`
+	UserLogin string `json:"user_login,omitempty"`
+	UserToken string `json:"user_token,omitempty"`
+}
+
 func NewMemcachedApi() *MemcachedApi {
 
 	return &MemcachedApi{
@@ -57,6 +64,18 @@ func (api *MemcachedApi) NotFoundmethod() (*memcache.Item, error) {
 	return api.memcache.Get(getCommand("notFoundmethod"))
 }
 
+func (api *MemcachedApi) GetUserWhereIdIn() (*memcache.Item, error) {
+
+	return api.memcache.Get(getCommand("GetUserWhereIdIn", []int{1, 2, 3, 4}))
+}
+
+func (api *MemcachedApi) SetUser() error {
+
+	value, _ := json.Marshal(&User{UserId: 42, UserName: "New User", UserLogin: "new_login"})
+
+	return api.memcache.Set(&memcache.Item{Key: "SetUser", Value: value})
+}
+
 func getCommand(method string, params ...interface{}) string {
 
 	jsonParams, _ := json.Marshal(params)
@@ -98,4 +117,10 @@ func main() {
 	item, _ = api.ReturnError()
 
 	fmt.Println(string(item.Value))
+
+	item, _ = api.GetUserWhereIdIn()
+
+	fmt.Println(string(item.Value))
+
+	fmt.Println(api.SetUser())
 }

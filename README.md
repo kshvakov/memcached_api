@@ -39,6 +39,13 @@ func (users *Users) Cast(intParam int, floatParam float64, stringParam string) (
 	return map[string]interface{}{"Int": intParam, "Float": floatParam, "String": stringParam}, nil
 }
 
+func (users *Users) SetUser(user *User) error {
+
+	fmt.Println(user)
+
+	return nil
+}
+
 func main() {
 
 	users := &Users{}
@@ -48,6 +55,7 @@ func main() {
 	api.Get("GetUserById", users.GetUserById)
 	api.Get("GetUserByTwoParams", users.GetUserByTwoParams)
 	api.Get("Cast", users.Cast)
+	api.Set("SetUser", users.SetUser)
 
 	api.Run()
 }
@@ -71,6 +79,13 @@ type MemcachedApi struct {
 func (api *MemcachedApi) GetUserById(userId int) (*memcache.Item, error) {
 
 	return api.memcache.Get(getCommand("GetUserById", userId))
+}
+
+func (api *MemcachedApi) SetUser() error {
+
+	value, _ := json.Marshal(&User{UserId: 42, UserName: "New User", UserLogin: "new_login"})
+
+	return api.memcache.Set(&memcache.Item{Key: "SetUser", Value: value})
 }
 
 func getCommand(method string, params ...interface{}) string {
@@ -111,6 +126,19 @@ class MemcachedApi
 	protected function _getCommand($method, ...$params)
 	{
 		return sprintf("%s:%s", $method, base64_encode(json_encode($params)));
+	}
+
+	public function setUser() 
+	{
+		return $this->_memcache->set(
+			'SetUser', json_encode(
+				[
+					'user_id'    => 42, 
+					'user_name'  => 'New User', 
+					'user_login' => 'new_login'
+				]
+			)
+		);
 	}
 }
 

@@ -55,6 +55,24 @@ class MemcachedApi
 		return $this->_memcache->get($this->_getCommand("notFoundmethod"));
 	}
 
+	public function GetUserWhereIdIn()
+	{
+		return $this->_memcache->get($this->_getCommand("GetUserWhereIdIn", [1,2,3,4]));
+	}
+
+	public function setUser() 
+	{
+		return $this->_memcache->set(
+			'SetUser', json_encode(
+				[
+					'user_id'    => 42, 
+					'user_name'  => 'New User', 
+					'user_login' => 'new_login'
+				]
+			)
+		);
+	}
+
 	protected function _getCommand($method, ...$params)
 	{
 		return sprintf("%s:%s", $method, base64_encode(json_encode($params)));
@@ -74,7 +92,8 @@ var_dump($Api->getUserByTwoParams(uniqid(), 42));
 var_dump($Api->cast());
 var_dump($Api->returnError());
 var_dump($Api->notFoundmethod());
+var_dump($Api->GetUserWhereIdIn());
 
-
+var_dump($Api->setUser());
 
 

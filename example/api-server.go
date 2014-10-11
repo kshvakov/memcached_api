@@ -40,6 +40,25 @@ func (users *Users) ReturnError() (interface{}, error) {
 	return nil, fmt.Errorf("Error message")
 }
 
+func (users *Users) GetUserWhereIdIn(userIds []interface{}) (interface{}, error) {
+
+	var result []*User
+
+	for _, userId := range userIds {
+
+		result = append(result, &User{UserId: int(userId.(float64)), UserName: "Test User"})
+	}
+
+	return result, nil
+}
+
+func (users *Users) SetUser(user *User) error {
+
+	fmt.Println(user)
+
+	return nil
+}
+
 func main() {
 
 	users := &Users{}
@@ -51,6 +70,7 @@ func main() {
 	api.Get("GetUserByTwoParams", users.GetUserByTwoParams)
 	api.Get("Cast", users.Cast)
 	api.Get("ReturnError", users.ReturnError)
-
+	api.Get("GetUserWhereIdIn", users.GetUserWhereIdIn)
+	api.Set("SetUser", users.SetUser)
 	api.Run()
 }
