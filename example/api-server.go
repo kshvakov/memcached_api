@@ -72,5 +72,20 @@ func main() {
 	api.Get("ReturnError", users.ReturnError)
 	api.Get("GetUserWhereIdIn", users.GetUserWhereIdIn)
 	api.Set("SetUser", users.SetUser)
+
+	api.Increment("Increment", func(delta int64) (int64, error) {
+
+		fmt.Printf("delta: %d\n", delta)
+
+		return delta + 42, nil
+	})
+
+	api.Increment("Decrement", func(delta int64) (int64, error) {
+
+		fmt.Printf("delta: %d\n", delta)
+
+		return 42 - delta, nil
+	})
+
 	api.Run()
 }

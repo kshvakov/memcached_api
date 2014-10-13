@@ -10,11 +10,11 @@ import (
 	"strings"
 )
 
-func (api *Api) callGet(request []byte, connect net.Conn) {
+func (api *Api) callGet(line []byte, connect net.Conn) {
 
 	var response interface{}
 
-	commands := bytes.Split(request, []byte(" "))
+	commands := bytes.Split(line, []byte(" "))
 
 	for _, command := range commands[1:] {
 
@@ -30,16 +30,14 @@ func (api *Api) callGet(request []byte, connect net.Conn) {
 
 			if err := json.Unmarshal(data, &tmp); err == nil {
 
-				reflectHandler := reflect.ValueOf(handler)
-
 				params := make([]reflect.Value, len(tmp))
 
 				for i, _ := range tmp {
 
-					params[i] = reflect.ValueOf(tmp[i]).Convert(reflectHandler.Type().In(i))
+					params[i] = reflect.ValueOf(tmp[i]).Convert(handler.typeIn[i])
 				}
 
-				result := reflectHandler.Call(params)
+				result := handler.method.Call(params)
 
 				if result[1].IsNil() {
 

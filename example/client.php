@@ -73,6 +73,16 @@ class MemcachedApi
 		);
 	}
 
+	public function increment($delta) 
+	{
+		return $this->_memcache->increment("Increment", $delta);
+	}
+
+	public function decrement($delta) 
+	{
+		return $this->_memcache->increment("Decrement", $delta);
+	}
+
 	protected function _getCommand($method, ...$params)
 	{
 		return sprintf("%s:%s", $method, base64_encode(json_encode($params)));
@@ -96,4 +106,12 @@ var_dump($Api->GetUserWhereIdIn());
 
 var_dump($Api->setUser());
 
+for ($i = 1; $i <= 5; $i++) { 
+	
+	var_dump($Api->increment($i));
+}
 
+for ($i = 1; $i <= 5; $i++) { 
+	
+	var_dump($Api->decrement($i));
+}

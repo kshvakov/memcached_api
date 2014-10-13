@@ -1,17 +1,27 @@
 package memcached_api
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"net"
 	"reflect"
 )
 
-func (api *Api) callSet(request []byte, data []byte, connect net.Conn) {
+func (api *Api) callSet(line []byte, reader *bufio.Reader, connect net.Conn) {
 
-	split := bytes.Split(request, []byte(" "))
+	data, err := reader.ReadBytes('\n')
 
-	method := string(split[1])
+	if err != nil {
+
+		connect.Write([]byte("NOT_STORED\r\n"))
+
+		return
+	}
+
+	part := bytes.Split(line, []byte(" "))
+
+	method := string(part[1])
 
 	if handler, found := api.setHandlers[method]; found {
 
@@ -19,9 +29,16 @@ func (api *Api) callSet(request []byte, data []byte, connect net.Conn) {
 
 		if err := json.Unmarshal(data, &params); err == nil {
 
-			handler.method.Call([]reflect.Value{reflect.ValueOf(params)})
+			result := handler.method.Call([]reflect.Value{reflect.ValueOf(params)})
 
-			connect.Write([]byte("STORED\r\n"))
+			if result[0].IsNil() {
+
+				connect.Write([]byte("STORED\r\n"))
+
+			} else {
+
+				connect.Write([]byte("NOT_STORED\r\n"))
+			}
 
 		} else {
 

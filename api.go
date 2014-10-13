@@ -14,24 +14,42 @@ type setHandler struct {
 	params reflect.Value
 }
 
+type getHandler struct {
+	method reflect.Value
+	typeIn []reflect.Type
+}
+
 type Api struct {
-	statHandler statHandler
-	getHandlers map[string]interface{}
-	setHandlers map[string]*setHandler
+	statHandler      statHandler
+	getHandlers      map[string]*getHandler
+	setHandlers      map[string]*setHandler
+	incrDecrHandlers map[string]incrDecrHandler
 }
 
 func (api *Api) Get(key string, handler interface{}) error {
 
-	if isValidGetHandler(handler) {
+	method := reflect.ValueOf(handler)
 
-		api.getHandlers[key] = handler
+	if method.Type().NumOut() != 2 || method.Type().Out(0).Kind() != reflect.Interface || method.Type().Out(1).String() != "error" {
 
-		return nil
+		log.Print("Invalid Get handler")
+
+		return fmt.Errorf("Invalid Get handler")
 	}
 
-	log.Print("Invalid Get handler")
+	typeIn := make([]reflect.Type, method.Type().NumIn())
 
-	return fmt.Errorf("Invalid Get handler")
+	for i := 0; i < method.Type().NumIn(); i++ {
+
+		typeIn[i] = method.Type().In(i)
+	}
+
+	api.getHandlers[key] = &getHandler{
+		method: method,
+		typeIn: typeIn,
+	}
+
+	return nil
 }
 
 func (api *Api) Set(key string, handler interface{}) error {
@@ -53,16 +71,19 @@ func (api *Api) Set(key string, handler interface{}) error {
 	return fmt.Errorf("Invalid Set handler")
 }
 
+/*
 func (api *Api) Delete(key string, handler deleteHandler) {
 
 }
+*/
+func (api *Api) Increment(key string, handler incrDecrHandler) {
 
-func (api *Api) Increment(key string, handler incrementHandler) {
-
+	api.incrDecrHandlers[key] = handler
 }
 
-func (api *Api) Decrement(key string, handler decrementHandler) {
+func (api *Api) Decrement(key string, handler incrDecrHandler) {
 
+	api.incrDecrHandlers[key] = handler
 }
 
 func (api *Api) Stats(handler statHandler) {
@@ -110,7 +131,7 @@ func (api *Api) handle(connect net.Conn) {
 
 	for {
 
-		request, err := reader.ReadBytes('\n')
+		line, err := reader.ReadBytes('\n')
 
 		if err != nil {
 
@@ -123,24 +144,23 @@ func (api *Api) handle(connect net.Conn) {
 
 		switch true {
 
-		case bytes.HasPrefix(request, []byte("get")):
+		case bytes.HasPrefix(line, []byte("get")):
 
-			api.callGet(request, connect)
+			api.callGet(line, connect)
 
-		case bytes.HasPrefix(request, []byte("set")):
+		case bytes.HasPrefix(line, []byte("set")):
 
-			if data, err := reader.ReadBytes('\n'); err == nil {
+			api.callSet(line, reader, connect)
 
-				api.callSet(request, data, connect)
+		case bytes.HasPrefix(line, []byte("incr")):
 
-			} else {
+			api.callIncrementDecrement("incr", line, connect)
 
-				log.Printf("data err: %s", err.Error())
+		case bytes.HasPrefix(line, []byte("decr")):
 
-				connect.Write([]byte("NOT_STORED\r\n"))
-			}
+			api.callIncrementDecrement("decr", line, connect)
 
-		case bytes.HasPrefix(request, []byte("stats")):
+		case bytes.HasPrefix(line, []byte("stats")):
 
 			log.Print("STAT")
 
@@ -148,20 +168,8 @@ func (api *Api) handle(connect net.Conn) {
 			connect.Write([]byte("END\r\n"))
 		}
 
-		log.Print(string(request))
+		log.Print(string(line))
 
 		log.Print("--command--")
 	}
-}
-
-func isValidGetHandler(handler interface{}) bool {
-
-	methodType := reflect.ValueOf(handler).Type()
-
-	if methodType.NumOut() != 2 {
-
-		return false
-	}
-
-	return methodType.Out(0).Kind() == reflect.Interface && methodType.Out(1).String() == "error"
 }
