@@ -20,21 +20,25 @@ type getHandler struct {
 }
 
 type Api struct {
+	address          string
 	statHandler      statHandler
 	getHandlers      map[string]*getHandler
 	setHandlers      map[string]*setHandler
-	incrDecrHandlers map[string]incrDecrHandler
+	incrDecrHandlers map[string]func(delta int64) (int64, error)
 }
 
-func (api *Api) Get(key string, handler interface{}) error {
+func (api *Api) Get(key string, handler interface{}) {
 
 	method := reflect.ValueOf(handler)
 
-	if method.Type().NumOut() != 2 || method.Type().Out(0).Kind() != reflect.Interface || method.Type().Out(1).String() != "error" {
+	if method.Type().NumOut() != 2 {
 
-		log.Print("Invalid Get handler")
+		log.Fatal("Invalid Get handler")
+	}
 
-		return fmt.Errorf("Invalid Get handler")
+	if method.Type().Out(0).Kind() != reflect.Interface || method.Type().Out(1).String() != "error" {
+
+		log.Fatal("Invalid Get handler")
 	}
 
 	typeIn := make([]reflect.Type, method.Type().NumIn())
@@ -48,11 +52,9 @@ func (api *Api) Get(key string, handler interface{}) error {
 		method: method,
 		typeIn: typeIn,
 	}
-
-	return nil
 }
 
-func (api *Api) Set(key string, handler interface{}) error {
+func (api *Api) Set(key string, handler interface{}) {
 
 	method := reflect.ValueOf(handler)
 
@@ -63,12 +65,10 @@ func (api *Api) Set(key string, handler interface{}) error {
 			params: reflect.New(method.Type().In(0).Elem()),
 		}
 
-		return nil
+		return
 	}
 
-	log.Print("Invalid Set handler")
-
-	return fmt.Errorf("Invalid Set handler")
+	log.Fatal("Invalid Set handler")
 }
 
 /*
@@ -76,32 +76,25 @@ func (api *Api) Delete(key string, handler deleteHandler) {
 
 }
 */
-func (api *Api) Increment(key string, handler incrDecrHandler) error {
+func (api *Api) Increment(key string, handler func(delta int64) (int64, error)) {
 
 	if _, found := api.incrDecrHandlers[key]; found {
 
-		log.Printf("handler '%s' is already registered.", key)
-
-		return fmt.Errorf("handler '%s' is already registered.", key)
+		log.Fatal("handler '%s' is already registered.", key)
 	}
 
 	api.incrDecrHandlers[key] = handler
 
-	return nil
 }
 
-func (api *Api) Decrement(key string, handler incrDecrHandler) error {
+func (api *Api) Decrement(key string, handler func(delta int64) (int64, error)) {
 
 	if _, found := api.incrDecrHandlers[key]; found {
 
-		log.Printf("handler '%s' is already registered.", key)
-
-		return fmt.Errorf("handler '%s' is already registered.", key)
+		log.Fatal("handler '%s' is already registered.", key)
 	}
 
 	api.incrDecrHandlers[key] = handler
-
-	return nil
 }
 
 func (api *Api) Stats(handler statHandler) {
@@ -113,7 +106,7 @@ func (api *Api) Run() {
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 
-	if listener, err := net.Listen("tcp", "127.0.0.1:3000"); err == nil {
+	if listener, err := net.Listen("tcp", api.address); err == nil {
 
 		for {
 
@@ -123,13 +116,13 @@ func (api *Api) Run() {
 
 			} else {
 
-				fmt.Println(err.Error())
+				log.Print(err.Error())
 			}
 		}
 
 	} else {
 
-		fmt.Println(err.Error())
+		log.Fatal(err.Error())
 	}
 }
 
@@ -185,9 +178,5 @@ func (api *Api) handle(connect net.Conn) {
 			connect.Write([]byte("STAT hh 42\r\n"))
 			connect.Write([]byte("END\r\n"))
 		}
-
-		log.Print(string(line))
-
-		log.Print("--command--")
 	}
 }

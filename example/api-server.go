@@ -63,7 +63,7 @@ func main() {
 
 	users := &Users{}
 
-	api := memcached_api.New()
+	api := memcached_api.New("127.0.0.1:3000")
 
 	api.Get("GetUserById", users.GetUserById)
 	api.Get("GetAuthUser", users.GetAuthUser)
