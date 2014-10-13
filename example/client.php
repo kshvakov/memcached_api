@@ -80,7 +80,7 @@ class MemcachedApi
 
 	public function decrement($delta) 
 	{
-		return $this->_memcache->increment("Decrement", $delta);
+		return $this->_memcache->decrement("Decrement", $delta);
 	}
 
 	protected function _getCommand($method, ...$params)

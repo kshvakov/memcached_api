@@ -76,14 +76,32 @@ func (api *Api) Delete(key string, handler deleteHandler) {
 
 }
 */
-func (api *Api) Increment(key string, handler incrDecrHandler) {
+func (api *Api) Increment(key string, handler incrDecrHandler) error {
+
+	if _, found := api.incrDecrHandlers[key]; found {
+
+		log.Printf("handler '%s' is already registered.", key)
+
+		return fmt.Errorf("handler '%s' is already registered.", key)
+	}
 
 	api.incrDecrHandlers[key] = handler
+
+	return nil
 }
 
-func (api *Api) Decrement(key string, handler incrDecrHandler) {
+func (api *Api) Decrement(key string, handler incrDecrHandler) error {
+
+	if _, found := api.incrDecrHandlers[key]; found {
+
+		log.Printf("handler '%s' is already registered.", key)
+
+		return fmt.Errorf("handler '%s' is already registered.", key)
+	}
 
 	api.incrDecrHandlers[key] = handler
+
+	return nil
 }
 
 func (api *Api) Stats(handler statHandler) {

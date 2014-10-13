@@ -80,7 +80,7 @@ func main() {
 		return delta + 42, nil
 	})
 
-	api.Increment("Decrement", func(delta int64) (int64, error) {
+	api.Decrement("Decrement", func(delta int64) (int64, error) {
 
 		fmt.Printf("delta: %d\n", delta)
 

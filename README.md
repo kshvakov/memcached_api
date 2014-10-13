@@ -57,6 +57,20 @@ func main() {
 	api.Get("Cast", users.Cast)
 	api.Set("SetUser", users.SetUser)
 
+	api.Increment("Increment", func(delta int64) (int64, error) {
+
+		fmt.Printf("delta: %d\n", delta)
+
+		return delta + 42, nil
+	})
+
+	api.Decrement("Decrement", func(delta int64) (int64, error) {
+
+		fmt.Printf("delta: %d\n", delta)
+
+		return 42 - delta, nil
+	})
+
 	api.Run()
 }
 
