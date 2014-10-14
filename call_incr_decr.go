@@ -29,7 +29,7 @@ func (api *Api) callIncrementDecrement(command string, line []byte, connect net.
 
 		} else {
 
-			connect.Write([]byte("ERROR\r\n"))
+			connect.Write([]byte(fmt.Sprintf("SERVER_ERROR %s", err.Error())))
 		}
 
 	} else {

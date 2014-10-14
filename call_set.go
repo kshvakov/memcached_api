@@ -37,16 +37,16 @@ func (api *Api) callSet(line []byte, reader *bufio.Reader, connect net.Conn) {
 
 			} else {
 
-				connect.Write([]byte("NOT_STORED\r\n"))
+				connect.Write([]byte(fmt.Sprintf("SERVER_ERROR %s\r\n", result[0].Interface())))
 			}
 
 		} else {
 
-			connect.Write([]byte("NOT_STORED\r\n"))
+			connect.Write([]byte(fmt.Sprintf("CLIENT_ERROR %s", err.Error())))
 		}
 
 	} else {
 
-		connect.Write([]byte("NOT_STORED\r\n"))
+		connect.Write([]byte("ERROR\r\n"))
 	}
 }

@@ -75,16 +75,23 @@ func main() {
 
 	api.Increment("Increment", func(delta int64) (int64, error) {
 
-		fmt.Printf("delta: %d\n", delta)
+		fmt.Printf("incr delta: %d\n", delta)
 
 		return delta + 42, nil
 	})
 
 	api.Decrement("Decrement", func(delta int64) (int64, error) {
 
-		fmt.Printf("delta: %d\n", delta)
+		fmt.Printf("decr delta: %d\n", delta)
 
 		return 42 - delta, nil
+	})
+
+	api.Delete("Delete", func(userId int) error {
+
+		fmt.Printf("delete user where user_id = %d\n", userId)
+
+		return nil
 	})
 
 	api.Run()

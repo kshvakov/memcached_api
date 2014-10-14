@@ -9,21 +9,12 @@ import (
 	"reflect"
 )
 
-type setHandler struct {
-	method reflect.Value
-	params reflect.Value
-}
-
-type getHandler struct {
-	method reflect.Value
-	typeIn []reflect.Type
-}
-
 type Api struct {
 	address          string
-	statHandler      statHandler
+	statHandler      func() (map[string]interface{}, error)
 	getHandlers      map[string]*getHandler
 	setHandlers      map[string]*setHandler
+	deleteHandlers   map[string]*deleteHandler
 	incrDecrHandlers map[string]func(delta int64) (int64, error)
 }
 
@@ -71,11 +62,33 @@ func (api *Api) Set(key string, handler interface{}) {
 	log.Fatal("Invalid Set handler")
 }
 
-/*
-func (api *Api) Delete(key string, handler deleteHandler) {
+func (api *Api) Delete(key string, handler interface{}) {
 
+	method := reflect.ValueOf(handler)
+
+	if method.Type().NumOut() != 1 {
+
+		log.Fatal("Invalid Delete handler")
+	}
+
+	if method.Type().Out(0).String() != "error" {
+
+		log.Fatal("Invalid Delete handler")
+	}
+
+	typeIn := make([]reflect.Type, method.Type().NumIn())
+
+	for i := 0; i < method.Type().NumIn(); i++ {
+
+		typeIn[i] = method.Type().In(i)
+	}
+
+	api.deleteHandlers[key] = &deleteHandler{
+		method: method,
+		typeIn: typeIn,
+	}
 }
-*/
+
 func (api *Api) Increment(key string, handler func(delta int64) (int64, error)) {
 
 	if _, found := api.incrDecrHandlers[key]; found {
@@ -97,7 +110,7 @@ func (api *Api) Decrement(key string, handler func(delta int64) (int64, error)) 
 	api.incrDecrHandlers[key] = handler
 }
 
-func (api *Api) Stats(handler statHandler) {
+func (api *Api) Stats(handler func() (map[string]interface{}, error)) {
 
 	api.statHandler = handler
 }
@@ -162,6 +175,10 @@ func (api *Api) handle(connect net.Conn) {
 		case bytes.HasPrefix(line, []byte("set")):
 
 			api.callSet(line, reader, connect)
+
+		case bytes.HasPrefix(line, []byte("delete")):
+
+			api.callDelete(line, connect)
 
 		case bytes.HasPrefix(line, []byte("incr")):
 

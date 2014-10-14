@@ -17,47 +17,47 @@ class MemcachedApi
 
 	public function getUserById($userId)
 	{
-		return $this->_memcache->get($this->_getCommand("GetUserById", (int) $userId));
+		return $this->_memcache->get($this->_command("GetUserById", (int) $userId));
 	}
 
 	public function getUserByTwoParams($login, $userId)
 	{
-		return $this->_memcache->get($this->_getCommand("GetUserByTwoParams", $login, (int) $userId));
+		return $this->_memcache->get($this->_command("GetUserByTwoParams", $login, (int) $userId));
 	}
 
 	public function getAuthUser($token)
 	{
-		return $this->_memcache->get($this->_getCommand("GetAuthUser", $token));
+		return $this->_memcache->get($this->_command("GetAuthUser", $token));
 	}
 
 	public function cast()
 	{
-		return $this->_memcache->get($this->_getCommand("Cast", 42, 3.14159265359, "Hello"));
+		return $this->_memcache->get($this->_command("Cast", 42, 3.14159265359, "Hello"));
 	}
 
 	public function multiGet()
 	{
 		return $this->_memcache->get(
 			[
-				$this->_getCommand("GetUserById", 42),
-				$this->_getCommand("GetAuthUser", "token")
+				$this->_command("GetUserById", 42),
+				$this->_command("GetAuthUser", "token")
 			]
 		);
 	}
 	
 	public function returnError()
 	{
-		return $this->_memcache->get($this->_getCommand("ReturnError"));
+		return $this->_memcache->get($this->_command("ReturnError"));
 	}
 
 	public function notFoundmethod()
 	{
-		return $this->_memcache->get($this->_getCommand("notFoundmethod"));
+		return $this->_memcache->get($this->_command("notFoundmethod"));
 	}
 
 	public function GetUserWhereIdIn()
 	{
-		return $this->_memcache->get($this->_getCommand("GetUserWhereIdIn", [1,2,3,4]));
+		return $this->_memcache->get($this->_command("GetUserWhereIdIn", [1,2,3,4]));
 	}
 
 	public function setUser() 
@@ -83,7 +83,12 @@ class MemcachedApi
 		return $this->_memcache->decrement("Decrement", $delta);
 	}
 
-	protected function _getCommand($method, ...$params)
+	public function delete()
+	{
+		return $this->_memcache->delete($this->_command("Delete", 42));
+	}
+
+	protected function _command($method, ...$params)
 	{
 		return sprintf("%s:%s", $method, base64_encode(json_encode($params)));
 	}
@@ -115,3 +120,5 @@ for ($i = 1; $i <= 5; $i++) {
 	
 	var_dump($Api->decrement($i));
 }
+
+var_dump($Api->delete());
