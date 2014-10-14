@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"net"
+	"fmt"
 	"reflect"
 )
 
-func (api *Api) callSet(line []byte, reader *bufio.Reader, connect net.Conn) {
+func (api *Api) callSet(line []byte, reader *bufio.Reader, connect netConnector) {
 
 	data, err := reader.ReadBytes('\n')
 

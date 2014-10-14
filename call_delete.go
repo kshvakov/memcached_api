@@ -4,12 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"reflect"
 	"strings"
 )
 
-func (api *Api) callDelete(line []byte, connect net.Conn) {
+func (api *Api) callDelete(line []byte, connect netConnector) {
 
 	part := strings.SplitN(strings.Split(string(line), " ")[1], ":", 2)
 

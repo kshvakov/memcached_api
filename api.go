@@ -66,12 +66,7 @@ func (api *Api) Delete(key string, handler interface{}) {
 
 	method := reflect.ValueOf(handler)
 
-	if method.Type().NumOut() != 1 {
-
-		log.Fatal("Invalid Delete handler")
-	}
-
-	if method.Type().Out(0).String() != "error" {
+	if method.Type().NumOut() != 1 || method.Type().Out(0).String() != "error" {
 
 		log.Fatal("Invalid Delete handler")
 	}
@@ -139,7 +134,7 @@ func (api *Api) Run() {
 	}
 }
 
-func (api *Api) handle(connect net.Conn) {
+func (api *Api) handle(connect netConnector) {
 
 	defer func() {
 

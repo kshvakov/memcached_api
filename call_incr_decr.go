@@ -2,10 +2,9 @@ package memcached_api
 
 import (
 	"fmt"
-	"net"
 )
 
-func (api *Api) callIncrementDecrement(command string, line []byte, connect net.Conn) {
+func (api *Api) callIncrementDecrement(command string, line []byte, connect netConnector) {
 
 	var (
 		method string

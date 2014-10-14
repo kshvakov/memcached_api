@@ -5,12 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"reflect"
 	"strings"
 )
 
-func (api *Api) callGet(line []byte, connect net.Conn) {
+func (api *Api) callGet(line []byte, connect netConnector) {
 
 	var response interface{}
 
@@ -24,9 +23,9 @@ func (api *Api) callGet(line []byte, connect net.Conn) {
 
 		if handler, found := api.getHandlers[method]; found {
 
-			data, _ := base64.StdEncoding.DecodeString(part[1])
-
 			var tmp []interface{}
+
+			data, _ := base64.StdEncoding.DecodeString(part[1])
 
 			if err := json.Unmarshal(data, &tmp); err == nil {
 

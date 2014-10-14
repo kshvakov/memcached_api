@@ -71,6 +71,13 @@ func main() {
 		return 42 - delta, nil
 	})
 
+	api.Delete("Delete", func(userId int) error {
+
+		fmt.Printf("delete user where user_id = %d\n", userId)
+
+		return nil
+	})
+
 	api.Run()
 }
 

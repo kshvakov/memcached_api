@@ -122,3 +122,5 @@ for ($i = 1; $i <= 5; $i++) {
 }
 
 var_dump($Api->delete());
+
+var_dump($Api->getStats());

@@ -27,46 +27,46 @@ type MemcachedApi struct {
 
 func (api *MemcachedApi) GetUserById(userId int) (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("GetUserById", userId))
+	return api.memcache.Get(command("GetUserById", userId))
 }
 
 func (api *MemcachedApi) GetUserByTwoParams(login string, userId int) (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("GetUserByTwoParams", login, userId))
+	return api.memcache.Get(command("GetUserByTwoParams", login, userId))
 }
 
 func (api *MemcachedApi) GetAuthUser(token string) (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("GetAuthUser", token))
+	return api.memcache.Get(command("GetAuthUser", token))
 }
 
 func (api *MemcachedApi) Cast() (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("Cast", 42, 3.14159265359, "Hello"))
+	return api.memcache.Get(command("Cast", 42, 3.14159265359, "Hello"))
 }
 
 func (api *MemcachedApi) MultiGet() (map[string]*memcache.Item, error) {
 
 	return api.memcache.GetMulti([]string{
-		getCommand("GetUserById", 42),
-		getCommand("GetAuthUser", "token"),
+		command("GetUserById", 42),
+		command("GetAuthUser", "token"),
 	},
 	)
 }
 
 func (api *MemcachedApi) ReturnError() (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("ReturnError"))
+	return api.memcache.Get(command("ReturnError"))
 }
 
 func (api *MemcachedApi) NotFoundmethod() (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("notFoundmethod"))
+	return api.memcache.Get(command("notFoundmethod"))
 }
 
 func (api *MemcachedApi) GetUserWhereIdIn() (*memcache.Item, error) {
 
-	return api.memcache.Get(getCommand("GetUserWhereIdIn", []int{1, 2, 3, 4}))
+	return api.memcache.Get(command("GetUserWhereIdIn", []int{1, 2, 3, 4}))
 }
 
 func (api *MemcachedApi) SetUser() error {
@@ -76,7 +76,7 @@ func (api *MemcachedApi) SetUser() error {
 	return api.memcache.Set(&memcache.Item{Key: "SetUser", Value: value})
 }
 
-func getCommand(method string, params ...interface{}) string {
+func command(method string, params ...interface{}) string {
 
 	jsonParams, _ := json.Marshal(params)
 
