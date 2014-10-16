@@ -1,4 +1,4 @@
-Memcached API (Golang implementation)
+Access to apps via memcached api
 =============
 
 
