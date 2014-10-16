@@ -7,15 +7,18 @@ import (
 	"log"
 	"net"
 	"reflect"
+	"time"
 )
 
 type Api struct {
 	address          string
-	statHandler      func() (map[string]interface{}, error)
+	statHandler      informer
 	getHandlers      map[string]*getHandler
 	setHandlers      map[string]*setHandler
 	deleteHandlers   map[string]*deleteHandler
-	incrDecrHandlers map[string]func(delta int64) (int64, error)
+	incrDecrHandlers map[string]incrDecr
+	cmdStat          map[string]uint
+	handlerStats     map[string]uint
 }
 
 func (api *Api) Get(key string, handler interface{}) {
@@ -84,7 +87,7 @@ func (api *Api) Delete(key string, handler interface{}) {
 	}
 }
 
-func (api *Api) Increment(key string, handler func(delta int64) (int64, error)) {
+func (api *Api) Increment(key string, handler incrDecr) {
 
 	if _, found := api.incrDecrHandlers[key]; found {
 
@@ -95,7 +98,7 @@ func (api *Api) Increment(key string, handler func(delta int64) (int64, error)) 
 
 }
 
-func (api *Api) Decrement(key string, handler func(delta int64) (int64, error)) {
+func (api *Api) Decrement(key string, handler incrDecr) {
 
 	if _, found := api.incrDecrHandlers[key]; found {
 
@@ -105,7 +108,7 @@ func (api *Api) Decrement(key string, handler func(delta int64) (int64, error)) 
 	api.incrDecrHandlers[key] = handler
 }
 
-func (api *Api) Stats(handler func() (map[string]interface{}, error)) {
+func (api *Api) Stats(handler informer) {
 
 	api.statHandler = handler
 }
@@ -119,6 +122,8 @@ func (api *Api) Run() {
 		for {
 
 			if connect, err := listener.Accept(); err == nil {
+
+				connect.SetDeadline(time.Now().Add(time.Duration(10) * time.Second))
 
 				go api.handle(connect)
 
@@ -156,7 +161,7 @@ func (api *Api) handle(connect netConnector) {
 
 			connect.Close()
 
-			log.Print("Close connect")
+			//	log.Print("Close connect")
 
 			break
 		}
@@ -185,9 +190,24 @@ func (api *Api) handle(connect netConnector) {
 
 		case bytes.HasPrefix(line, []byte("stats")):
 
-			log.Print("STAT")
+			for cmd, reqs := range api.cmdStat {
 
-			connect.Write([]byte("STAT hh 42\r\n"))
+				connect.Write([]byte(fmt.Sprintf("STAT cmd_%s %d\r\n", cmd, reqs)))
+			}
+
+			for handler, reqs := range api.handlerStats {
+
+				connect.Write([]byte(fmt.Sprintf("STAT handler_%s %d\r\n", handler, reqs)))
+			}
+
+			if stat, err := api.statHandler(); err == nil {
+
+				for k, v := range stat {
+
+					connect.Write([]byte(fmt.Sprintf("STAT %s %d\r\n", k, v)))
+				}
+			}
+
 			connect.Write([]byte("END\r\n"))
 		}
 	}

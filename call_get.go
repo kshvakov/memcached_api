@@ -11,6 +11,8 @@ import (
 
 func (api *Api) callGet(line []byte, connect netConnector) {
 
+	api.cmdStat["get"]++
+
 	var response interface{}
 
 	commands := bytes.Split(line, []byte(" "))
@@ -22,6 +24,8 @@ func (api *Api) callGet(line []byte, connect netConnector) {
 		method := part[0]
 
 		if handler, found := api.getHandlers[method]; found {
+
+			api.handlerStats[method]++
 
 			var tmp []interface{}
 

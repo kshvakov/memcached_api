@@ -10,11 +10,15 @@ import (
 
 func (api *Api) callDelete(line []byte, connect netConnector) {
 
+	api.cmdStat["delete"]++
+
 	part := strings.SplitN(strings.Split(string(line), " ")[1], ":", 2)
 
 	method := part[0]
 
 	if handler, found := api.deleteHandlers[method]; found {
+
+		api.handlerStats[method]++
 
 		data, _ := base64.StdEncoding.DecodeString(part[1])
 

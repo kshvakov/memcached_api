@@ -76,6 +76,21 @@ func (api *MemcachedApi) SetUser() error {
 	return api.memcache.Set(&memcache.Item{Key: "SetUser", Value: value})
 }
 
+func (api *MemcachedApi) Increment(delta uint64) (uint64, error) {
+
+	return api.memcache.Increment("Increment", delta)
+}
+
+func (api *MemcachedApi) Decrement(delta uint64) (uint64, error) {
+
+	return api.memcache.Decrement("Decrement", delta)
+}
+
+func (api *MemcachedApi) Delete() error {
+
+	return api.memcache.Delete(command("Delete", 42))
+}
+
 func command(method string, params ...interface{}) string {
 
 	jsonParams, _ := json.Marshal(params)
@@ -123,4 +138,20 @@ func main() {
 	fmt.Println(string(item.Value))
 
 	fmt.Println(api.SetUser())
+
+	for i := 1; i <= 5; i++ {
+
+		newValue, _ := api.Increment(uint64(i))
+
+		fmt.Println(newValue)
+	}
+
+	for i := 1; i <= 5; i++ {
+
+		newValue, _ := api.Decrement(uint64(i))
+
+		fmt.Println(newValue)
+	}
+
+	fmt.Println(api.Delete())
 }

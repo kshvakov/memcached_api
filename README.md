@@ -3,12 +3,10 @@ Memcached API (Golang implementation)
 
 
 * Memcached ASCII protocol
-* Support multiget request
 * Get request with any params (key = method:base64(json(params)))
+* Multiget request support
+* STAT support
 * JSON response
-
-
-@todo: finalize it )
 
 simple api server
 
@@ -46,6 +44,8 @@ func (users *Users) SetUser(user *User) error {
 	return nil
 }
 
+
+
 func main() {
 
 	users := &Users{}
@@ -76,6 +76,11 @@ func main() {
 		fmt.Printf("delete user where user_id = %d\n", userId)
 
 		return nil
+	})
+
+	api.Stats(func() (map[string]uint, error) {
+
+		return map[string]uint{"Total_User": 42, "Total...": 100000}, nil
 	})
 
 	api.Run()
@@ -160,6 +165,11 @@ class MemcachedApi
 				]
 			)
 		);
+	}
+
+	public function getStats()
+	{
+		return $this->_memcache->getStats();
 	}
 }
 

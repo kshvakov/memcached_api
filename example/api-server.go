@@ -59,6 +59,27 @@ func (users *Users) SetUser(user *User) error {
 	return nil
 }
 
+func (users *Users) Delete(userId int) error {
+
+	fmt.Printf("delete user where user_id = %d\n", userId)
+
+	return nil
+}
+
+func (users *Users) Increment(delta int64) (int64, error) {
+
+	fmt.Printf("incr delta: %d\n", delta)
+
+	return delta + 42, nil
+}
+
+func (users *Users) Decrement(delta int64) (int64, error) {
+
+	fmt.Printf("decr delta: %d\n", delta)
+
+	return 42 - delta, nil
+}
+
 func main() {
 
 	users := &Users{}
@@ -73,25 +94,14 @@ func main() {
 	api.Get("GetUserWhereIdIn", users.GetUserWhereIdIn)
 	api.Set("SetUser", users.SetUser)
 
-	api.Increment("Increment", func(delta int64) (int64, error) {
+	api.Increment("Increment", users.Increment)
+	api.Decrement("Decrement", users.Decrement)
 
-		fmt.Printf("incr delta: %d\n", delta)
+	api.Delete("Delete", users.Delete)
 
-		return delta + 42, nil
-	})
+	api.Stats(func() (map[string]uint, error) {
 
-	api.Decrement("Decrement", func(delta int64) (int64, error) {
-
-		fmt.Printf("decr delta: %d\n", delta)
-
-		return 42 - delta, nil
-	})
-
-	api.Delete("Delete", func(userId int) error {
-
-		fmt.Printf("delete user where user_id = %d\n", userId)
-
-		return nil
+		return map[string]uint{"Total_User": 42, "Total...": 100000}, nil
 	})
 
 	api.Run()

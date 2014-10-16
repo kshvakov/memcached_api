@@ -10,6 +10,8 @@ import (
 
 func (api *Api) callSet(line []byte, reader *bufio.Reader, connect netConnector) {
 
+	api.cmdStat["set"]++
+
 	data, err := reader.ReadBytes('\n')
 
 	if err != nil {
@@ -24,6 +26,8 @@ func (api *Api) callSet(line []byte, reader *bufio.Reader, connect netConnector)
 	method := string(part[1])
 
 	if handler, found := api.setHandlers[method]; found {
+
+		api.handlerStats[method]++
 
 		params := handler.params.Interface()
 

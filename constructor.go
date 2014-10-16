@@ -7,6 +7,8 @@ func New(address string) *Api {
 		getHandlers:      make(map[string]*getHandler),
 		setHandlers:      make(map[string]*setHandler),
 		deleteHandlers:   make(map[string]*deleteHandler),
-		incrDecrHandlers: make(map[string]func(delta int64) (int64, error)),
+		incrDecrHandlers: make(map[string]incrDecr),
+		cmdStat:          make(map[string]uint),
+		handlerStats:     make(map[string]uint),
 	}
 }
