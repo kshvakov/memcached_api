@@ -4,9 +4,11 @@ Memcached API (Golang implementation)
 
 * Memcached ASCII protocol
 * Get request with any params (key = method:base64(json(params)))
-* Multiget request support
-* STAT support
-* JSON response
+* Support get/gets/set/incr/decr/delete/stats commands
+* JSON response for "get/gets" commands
+
+
+**Example**
 
 simple api server
 
@@ -27,24 +29,12 @@ func (users *Users) GetUserById(userId int) (interface{}, error) {
 	return &User{UserId: userId, UserName: "Test User"}, nil
 }
 
-func (users *Users) GetUserByTwoParams(login string, userId int) (interface{}, error) {
-
-	return &User{UserId: userId, UserName: "Test User", UserLogin: login}, nil
-}
-
-func (users *Users) Cast(intParam int, floatParam float64, stringParam string) (interface{}, error) {
-
-	return map[string]interface{}{"Int": intParam, "Float": floatParam, "String": stringParam}, nil
-}
-
 func (users *Users) SetUser(user *User) error {
 
 	fmt.Println(user)
 
 	return nil
 }
-
-
 
 func main() {
 
@@ -53,30 +43,7 @@ func main() {
 	api := memcached_api.New("127.0.0.1:3000")
 
 	api.Get("GetUserById", users.GetUserById)
-	api.Get("GetUserByTwoParams", users.GetUserByTwoParams)
-	api.Get("Cast", users.Cast)
 	api.Set("SetUser", users.SetUser)
-
-	api.Increment("Increment", func(delta int64) (int64, error) {
-
-		fmt.Printf("delta: %d\n", delta)
-
-		return delta + 42, nil
-	})
-
-	api.Decrement("Decrement", func(delta int64) (int64, error) {
-
-		fmt.Printf("delta: %d\n", delta)
-
-		return 42 - delta, nil
-	})
-
-	api.Delete("Delete", func(userId int) error {
-
-		fmt.Printf("delete user where user_id = %d\n", userId)
-
-		return nil
-	})
 
 	api.Stats(func() (map[string]uint, error) {
 
@@ -177,4 +144,29 @@ $Api = new MemcachedApi;
 
 var_dump($Api->getUserById(42));
 
+```
+
+
+STAT
+
+```
+echo "stats" | nc 127.0.0.1 3000
+STAT cmd_get 180
+STAT cmd_set 20
+STAT cmd_incr 100
+STAT cmd_decr 100
+STAT cmd_delete 20
+STAT handler_GetAuthUser 40
+STAT handler_SetUser 20
+STAT handler_Increment 100
+STAT handler_Delete 20
+STAT handler_GetUserById 40
+STAT handler_Cast 20
+STAT handler_ReturnError 20
+STAT handler_GetUserWhereIdIn 20
+STAT handler_Decrement 100
+STAT handler_GetUserByTwoParams 20
+STAT Total_User 42
+STAT Total... 100000
+END
 ```
