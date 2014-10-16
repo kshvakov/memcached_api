@@ -49,6 +49,8 @@ func BenchmarkGet(b *testing.B) {
 			method: method,
 			typeIn: typeIn,
 		}},
+		cmdStat:      make(map[string]uint),
+		handlerStats: make(map[string]uint),
 	}
 
 	connect := &connect{}
